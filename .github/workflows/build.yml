@@ -1,0 +1,35 @@
+name: Build SwitchWebFiles
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install devkitPro toolchain
+        uses: devkitPro/pacman@v1
+        with:
+          packages: switch-dev switch-libnx
+
+      - name: Build homebrew application
+        run: make
+
+      - name: Verify build output
+        run: |
+          test -f SwitchWebFiles.nro
+          ls -lh SwitchWebFiles.nro
+
+      - name: Upload NRO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwitchWebFiles-NRO
+          path: SwitchWebFiles.nro
+          if-no-files-found: error
