@@ -1,3 +1,5 @@
+# .github/workflows/build.yml
+
 name: Build SwitchWebFiles
 
 on:
@@ -5,6 +7,9 @@ on:
   push:
     branches:
       - main
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -14,17 +19,21 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install devkitPro toolchain
-        uses: devkitPro/pacman@v1
-        with:
-          packages: switch-dev switch-libnx
-
-      - name: Build homebrew application
-        run: make
-
-      - name: Verify build output
+      - name: Build Nintendo Switch homebrew
         run: |
-          test -f SwitchWebFiles.nro
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/work" \
+            -w /work \
+            devkitpro/devkita64:latest \
+            make
+
+      - name: Verify NRO output
+        run: |
+          if [ ! -f SwitchWebFiles.nro ]; then
+            echo "ERROR: SwitchWebFiles.nro was not generated."
+            find . -maxdepth 3 -type f
+            exit 1
+          fi
           ls -lh SwitchWebFiles.nro
 
       - name: Upload NRO artifact
@@ -33,3 +42,4 @@ jobs:
           name: SwitchWebFiles-NRO
           path: SwitchWebFiles.nro
           if-no-files-found: error
+          retention-days: 7
